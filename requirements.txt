@@ -1,0 +1,4 @@
+flask
+dropbox
+python-dotenv
+werkzeug

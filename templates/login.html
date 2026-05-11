@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Po.La.R. Upload Area Access</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root{--navy:#122b63;--gold:#f2b544;--orange:#f16445;--text:#1f2937;}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:linear-gradient(180deg,#f7f9fc 0%,#eef3f9 100%);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+    .container{max-width:480px;width:100%;background:white;padding:34px;border-radius:24px;box-shadow:0 18px 60px rgba(18,43,99,.12);text-align:center;}
+    .logo{max-width:260px;width:100%;margin:0 auto 18px auto;display:block;}
+    h1{margin:0 0 10px 0;color:var(--navy);font-size:26px;}
+    p{line-height:1.5;color:#475569;}
+    label{display:block;text-align:left;margin-top:18px;margin-bottom:8px;font-weight:700;color:var(--navy);}
+    input{width:100%;box-sizing:border-box;padding:14px;border:1px solid #d9e1ec;border-radius:14px;font-size:16px;}
+    input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 4px rgba(18,43,99,.10);}
+    button{margin-top:24px;width:100%;padding:16px;border:0;border-radius:16px;font-size:17px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--gold) 0%,#f0a72c 100%);color:#1f2937;}
+    .message{padding:12px;border-radius:10px;margin:16px 0;}
+    .error{background:#fdecec;color:#9b1c1c;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="{{ url_for('static', filename='polar_logo.png') }}" class="logo" alt="Po.La.R. Logo">
+    <h1>Upload Area Access</h1>
+    <p>Please enter the project upload password.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="message {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form action="/login" method="post">
+      <label>Password</label>
+      <input type="password" name="password" required autofocus>
+      <button type="submit">Enter</button>
+    </form>
+  </div>
+</body>
+</html>

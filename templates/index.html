@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Po.La.R. Repository Upload</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    :root{
+      --navy:#122b63;
+      --navy-dark:#0d1f47;
+      --gold:#f2b544;
+      --orange:#f16445;
+      --green:#5dbb63;
+      --light:#f5f7fb;
+      --text:#1f2937;
+      --border:#d9e1ec;
+    }
+
+    *{box-sizing:border-box;}
+
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(241,100,69,.10), transparent 30%),
+        radial-gradient(circle at top right, rgba(93,187,99,.08), transparent 28%),
+        linear-gradient(180deg,#f7f9fc 0%, #eef3f9 100%);
+      color:var(--text);
+      min-height:100vh;
+      padding:40px 20px;
+    }
+
+    .wrapper{max-width:950px;margin:0 auto;}
+    .card{background:white;border-radius:28px;overflow:hidden;box-shadow:0 18px 60px rgba(18,43,99,.12);border:1px solid rgba(18,43,99,.08);}
+
+    .hero{
+      background:linear-gradient(135deg,var(--navy) 0%, #1b3d86 100%);
+      padding:40px;
+      text-align:center;
+      color:white;
+      position:relative;
+    }
+
+    .logo{max-width:320px;width:100%;margin:0 auto 18px auto;display:block;}
+    .hero h1{margin:0;font-size:34px;font-weight:700;}
+    .hero p{margin:14px auto 0 auto;max-width:740px;line-height:1.7;font-size:17px;opacity:.94;}
+
+    .content{padding:42px;}
+    h2{margin-top:0;color:var(--navy);font-size:22px;border-bottom:2px solid rgba(18,43,99,.08);padding-bottom:10px;margin-bottom:24px;}
+    .section{margin-bottom:40px;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+    .full{grid-column:1 / -1;}
+
+    label{display:block;margin-bottom:8px;font-weight:600;color:var(--navy-dark);}
+    .required{color:var(--orange);}
+
+    input,textarea,select{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px 16px;
+      font-size:16px;
+      transition:.2s ease;
+      background:#fff;
+    }
+
+    input:focus,textarea:focus,select:focus{
+      outline:none;
+      border-color:var(--navy);
+      box-shadow:0 0 0 4px rgba(18,43,99,.10);
+    }
+
+    textarea{min-height:130px;resize:vertical;}
+    .hint{font-size:13px;color:#64748b;margin-top:8px;}
+
+    .upload-box{border:2px dashed rgba(18,43,99,.25);border-radius:20px;padding:28px;background:rgba(18,43,99,.03);}
+
+    .submit-btn{
+      width:100%;
+      border:none;
+      border-radius:18px;
+      padding:18px;
+      background:linear-gradient(135deg,var(--gold) 0%, #f0a72c 100%);
+      color:#1f2937;
+      font-size:18px;
+      font-weight:700;
+      cursor:pointer;
+      transition:transform .15s ease, box-shadow .15s ease;
+      box-shadow:0 10px 24px rgba(242,181,68,.25);
+    }
+
+    .submit-btn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(242,181,68,.32);}
+    .top-link{text-align:right;margin-bottom:16px;}
+    .top-link a{color:var(--navy);text-decoration:none;font-weight:600;}
+    .message{padding:12px;border-radius:10px;margin-bottom:18px;}
+    .error{background:#fdecec;color:#9b1c1c;}
+    .success{background:#e8f7ec;color:#126b2f;}
+
+    @media (max-width:760px){
+      .grid{grid-template-columns:1fr;}
+      .content{padding:26px;}
+      .hero{padding:28px;}
+      .hero h1{font-size:28px;}
+    }
+    .loading-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(18,43,99,.72);
+  z-index:9999;
+  align-items:center;
+  justify-content:center;
+}
+
+.loading-box{
+  background:white;
+  padding:34px;
+  border-radius:24px;
+  text-align:center;
+  max-width:360px;
+  width:90%;
+  box-shadow:0 18px 60px rgba(0,0,0,.25);
+}
+
+.spinner{
+  width:58px;
+  height:58px;
+  border:6px solid #e5e7eb;
+  border-top:6px solid var(--gold);
+  border-radius:50%;
+  margin:0 auto 18px auto;
+  animation:spin 1s linear infinite;
+}
+
+.loading-box h3{
+  margin:0 0 8px 0;
+  color:var(--navy);
+}
+
+.loading-box p{
+  margin:0;
+  color:#64748b;
+}
+
+@keyframes spin{
+  from{ transform:rotate(0deg); }
+  to{ transform:rotate(360deg); }
+}
+
+
+
+
+  </style>
+</head>
+
+<body>
+  <div class="wrapper">
+    <div class="card">
+
+      <div class="hero">
+        <img src="{{ url_for('static', filename='polar_logo.png') }}" class="logo" alt="Po.La.R. Logo">
+
+        <h1>Political Language Repository</h1>
+
+        <p>
+          Upload political speech and media material for automatic transcription processing.
+          TXT transcript files will be delivered by email once processing is completed.
+          Please note that transcripts are automatically generated using OpenAI Whisper AI technology and should be considered raw transcriptions that may require manual revision.
+        </p>
+      </div>
+
+      <div class="content">
+
+        <div class="top-link">
+          <a href="/logout">Log out</a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="message {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+
+          <div class="section">
+            <h2>Uploader information</h2>
+
+            <div class="grid">
+              <div>
+                <label>First name <span class="required">*</span></label>
+                <input type="text" name="first_name" required>
+              </div>
+
+              <div>
+                <label>Last name <span class="required">*</span></label>
+                <input type="text" name="last_name" required>
+              </div>
+
+              <div class="full">
+                <label>Email address for transcript delivery <span class="required">*</span></label>
+                <input type="email" name="email" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Document details</h2>
+
+            <div class="grid">
+              <div class="full">
+                <label>Video/audio title <span class="required">*</span></label>
+                <input type="text" name="title" required>
+              </div>
+
+              <div class="full">
+                <label>Speaker(s) <span class="required">*</span></label>
+                <input type="text" name="speakers" required>
+              </div>
+
+              <div>
+                <label>Political party <span class="required">*</span></label>
+                <input type="text" name="political_party" required>
+              </div>
+
+              <div>
+                <label>Language <span class="required">*</span></label>
+                <select name="language" required>
+                  <option value="">Select a language</option>
+                  <option value="Italian">Italian</option>
+                  <option value="French">French</option>
+                  <option value="Spanish">Spanish</option>
+                  <option value="German">German</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Category <span class="required">*</span></label>
+                <select name="category" required>
+                  <option value="">Select a category</option>
+                  <option value="Election_Speeches">Election Speeches</option>
+                  <option value="Parliamentary_Speeches">Parliamentary Speeches</option>
+                  <option value="Party_Conventions">Party Conventions</option>
+                  <option value="PressConferences_Interviews">Press Conferences / Interviews</option>
+                  <option value="Talkshows">Talkshows</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Speech date</label>
+                <input type="date" name="speech_date">
+              </div>
+
+              <div class="full">
+                <label>Video/audio source URL <span class="required">*</span></label>
+                <input type="url" name="source_url" placeholder="https://..." required>
+              </div>
+
+              <div>
+                <label>Last access date</label>
+                <input type="date" name="last_access_date">
+              </div>
+
+              <div class="full">
+                <label>Notes</label>
+                <textarea name="notes" placeholder="Optional additional information"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>File upload</h2>
+
+            <div class="upload-box">
+              <label>Upload file <span class="required">*</span></label>
+
+              <input
+                type="file"
+                name="file"
+                accept=".mp4,.mov,.mkv,.avi,.webm,.mpeg,.mpg,.mp3,.wav,.m4a,.aac,.flac"
+                required
+              >
+
+              <div class="hint">
+                Supported formats: MP4, MOV, MKV, AVI, MP3, WAV, AAC, FLAC
+              </div>
+            </div>
+          </div>
+
+          <button class="submit-btn" type="submit">
+            Upload file
+          </button>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <h3>Uploading file...</h3>
+    <p>Please wait. Do not close this page.</p>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById("uploadForm");
+  const overlay = document.getElementById("loadingOverlay");
+
+  form.addEventListener("submit", function () {
+    overlay.style.display = "flex";
+  });
+</script>
+
+
+</body>
+</html>
