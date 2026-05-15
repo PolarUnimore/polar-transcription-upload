@@ -94,6 +94,50 @@ def logout():
 
 
 @app.route("/upload", methods=["POST"])
+def upload_to_dropbox_chunked(dbx, file_storage, dropbox_path, chunk_size=4 * 1024 * 1024):
+    file_storage.stream.seek(0)
+
+    first_chunk = file_storage.stream.read(chunk_size)
+
+    if not first_chunk:
+        raise ValueError("Empty file.")
+
+    if len(first_chunk) < chunk_size:
+        dbx.files_upload(
+            first_chunk,
+            dropbox_path,
+            mode=dropbox.files.WriteMode("add"),
+            mute=True,
+        )
+        return
+
+    session_start = dbx.files_upload_session_start(first_chunk)
+
+    cursor = dropbox.files.UploadSessionCursor(
+        session_id=session_start.session_id,
+        offset=len(first_chunk),
+    )
+
+    commit = dropbox.files.CommitInfo(
+        path=dropbox_path,
+        mode=dropbox.files.WriteMode("add"),
+        mute=True,
+    )
+
+    while True:
+        chunk = file_storage.stream.read(chunk_size)
+
+        if not chunk:
+            dbx.files_upload_session_finish(b"", cursor, commit)
+            break
+
+        if len(chunk) < chunk_size:
+            dbx.files_upload_session_finish(chunk, cursor, commit)
+            break
+
+        dbx.files_upload_session_append_v2(chunk, cursor)
+        cursor.offset += len(chunk)
+
 def upload():
     if not login_required():
         return redirect(url_for("login"))
@@ -194,13 +238,7 @@ def upload():
         media_path = unique_dropbox_path(dbx, DROPBOX_UPLOAD_FOLDER, final_filename)
         metadata_path = unique_dropbox_path(dbx, DROPBOX_UPLOAD_FOLDER, metadata_filename)
 
-        file.stream.seek(0)
-        dbx.files_upload(
-            file.stream.read(),
-            media_path,
-            mode=dropbox.files.WriteMode("add"),
-            mute=True,
-        )
+        upload_to_dropbox_chunked(dbx, file, media_path)
 
         metadata["dropbox"] = {
             "media_path": media_path,
