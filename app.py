@@ -69,32 +69,12 @@ def unique_dropbox_path(dbx, folder, filename):
 def login_required():
     return session.get("authenticated") is True
 
-@app.route("/", methods=["GET"])
-def index():
-    if not login_required():
-        return redirect(url_for("login"))
-    return render_template("index.html", max_upload_mb=MAX_UPLOAD_MB)
 
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        password = request.form.get("password", "")
-        if password == UPLOAD_PASSWORD:
-            session["authenticated"] = True
-            return redirect(url_for("index"))
-        flash("Incorrect password.", "error")
-    return render_template("login.html")
-
-
-@app.route("/logout", methods=["GET"])
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
-
-
-@app.route("/upload", methods=["POST"])
 def upload_to_dropbox_chunked(dbx, file_storage, dropbox_path, chunk_size=4 * 1024 * 1024):
+    """
+    Upload large files to Dropbox without loading everything into RAM.
+    """
+
     file_storage.stream.seek(0)
 
     first_chunk = file_storage.stream.read(chunk_size)
@@ -102,6 +82,7 @@ def upload_to_dropbox_chunked(dbx, file_storage, dropbox_path, chunk_size=4 * 10
     if not first_chunk:
         raise ValueError("Empty file.")
 
+    # Small file upload
     if len(first_chunk) < chunk_size:
         dbx.files_upload(
             first_chunk,
@@ -111,6 +92,7 @@ def upload_to_dropbox_chunked(dbx, file_storage, dropbox_path, chunk_size=4 * 10
         )
         return
 
+    # Large file upload session
     session_start = dbx.files_upload_session_start(first_chunk)
 
     cursor = dropbox.files.UploadSessionCursor(
@@ -138,12 +120,46 @@ def upload_to_dropbox_chunked(dbx, file_storage, dropbox_path, chunk_size=4 * 10
         dbx.files_upload_session_append_v2(chunk, cursor)
         cursor.offset += len(chunk)
 
+
+@app.route("/", methods=["GET"])
+def index():
+    if not login_required():
+        return redirect(url_for("login"))
+
+    return render_template("index.html", max_upload_mb=MAX_UPLOAD_MB)
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        password = request.form.get("password", "")
+
+        if password == UPLOAD_PASSWORD:
+            session["authenticated"] = True
+            return redirect(url_for("index"))
+
+        flash("Incorrect password.", "error")
+
+    return render_template("login.html")
+
+
+@app.route("/logout", methods=["GET"])
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
+@app.route("/upload", methods=["POST"])
 def upload():
+
     if not login_required():
         return redirect(url_for("login"))
 
     if not DROPBOX_APP_KEY or not DROPBOX_APP_SECRET or not DROPBOX_REFRESH_TOKEN:
-        flash("Configuration error: Dropbox refresh token configuration is incomplete.", "error")
+        flash(
+            "Configuration error: Dropbox refresh token configuration is incomplete.",
+            "error",
+        )
         return redirect(url_for("index"))
 
     first_name = request.form.get("first_name", "").strip()
@@ -163,8 +179,15 @@ def upload():
     file = request.files.get("file")
 
     required_values = [
-        first_name, last_name, email,
-        title, speakers, political_party, language, category, source_url
+        first_name,
+        last_name,
+        email,
+        title,
+        speakers,
+        political_party,
+        language,
+        category,
+        source_url,
     ]
 
     if not all(required_values):
@@ -202,7 +225,7 @@ def upload():
         "uploader": {
             "first_name": first_name,
             "last_name": last_name,
-            "email": email
+            "email": email,
         },
         "document": {
             "title": title,
@@ -213,7 +236,7 @@ def upload():
             "speech_date": speech_date,
             "source_url": source_url,
             "last_access_date": last_access_date,
-            "notes": notes
+            "notes": notes,
         },
         "file": {
             "original_filename": file.filename,
@@ -223,26 +246,37 @@ def upload():
             "expected_transcript_files": [
                 f"{base_filename}_text.txt",
                 f"{base_filename}_timestampText.txt",
-                f"{base_filename}_segments.txt"
-            ]
-        }
+                f"{base_filename}_segments.txt",
+            ],
+        },
     }
 
     try:
+
         dbx = dropbox.Dropbox(
-    oauth2_refresh_token=DROPBOX_REFRESH_TOKEN,
-    app_key=DROPBOX_APP_KEY,
-    app_secret=DROPBOX_APP_SECRET,
-)
+            oauth2_refresh_token=DROPBOX_REFRESH_TOKEN,
+            app_key=DROPBOX_APP_KEY,
+            app_secret=DROPBOX_APP_SECRET,
+        )
 
-        media_path = unique_dropbox_path(dbx, DROPBOX_UPLOAD_FOLDER, final_filename)
-        metadata_path = unique_dropbox_path(dbx, DROPBOX_UPLOAD_FOLDER, metadata_filename)
+        media_path = unique_dropbox_path(
+            dbx,
+            DROPBOX_UPLOAD_FOLDER,
+            final_filename,
+        )
 
+        metadata_path = unique_dropbox_path(
+            dbx,
+            DROPBOX_UPLOAD_FOLDER,
+            metadata_filename,
+        )
+
+        # Chunked upload
         upload_to_dropbox_chunked(dbx, file, media_path)
 
         metadata["dropbox"] = {
             "media_path": media_path,
-            "metadata_path": metadata_path
+            "metadata_path": metadata_path,
         }
 
         dbx.files_upload(
